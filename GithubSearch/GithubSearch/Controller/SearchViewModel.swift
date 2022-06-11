@@ -9,25 +9,25 @@ import Foundation
 
 class SearchViewModel: ObservableObject {
     @Published var searchText: String = "" {
-            didSet { isSearchEnabled = (searchText.count > 2) }
-        }
+        didSet { isSearchEnabled = (searchText.count > 2) }
+    }
     @Published var isSearchEnabled = false
     @Published private var results = [SearchResultVM]()
-    
+    @Published var isLoading = false
+    private var sQuery = ""
     var sectionHeading: String {
-        return "Records \(results.count)"
+        return "Records for \(sQuery): \(results.count)"
     }
     
     var filteredItems: [SearchResultVM] {
         get {
             let items =  results.filter({ item -> Bool in
-                return item.description.hasPrefix(searchText) || searchText.isEmpty
+                return item.description1.lowercased().contains(searchText.lowercased()) || searchText.isEmpty
             })
             
             if items.isEmpty {
                 return [SearchResultVM.emptyItem()]
             }
-            
             return items
         }
     }
@@ -41,29 +41,43 @@ class SearchViewModel: ObservableObject {
         if search.isEmpty {
             search = "test"
         }
-//        if search.isEmpty {
-//            return
-//        }
+        sQuery = search
+        searchText = ""
+        //        if search.isEmpty {
+        //            return
+        //        }
         
         guard let gUrl = URL(
-            string: "https://api.github.com/search/repositories?q=\(search)"
+            string: "https://api.github.com/search/repositories?q=\(sQuery)"
         ) else { return }
-        
+        isLoading = true
         let task = URLSession.shared.dataTask(with: gUrl) { (data: Data?, urlResp: URLResponse?, err: Error?) in
-            do {
-                if let data = data {
-                    let response = try JSONDecoder().decode(SearchResponse.self, from: data)
-                    DispatchQueue.main.async { [weak self] in
+            
+            DispatchQueue.main.async { [weak self] in
+                do {
+                    if let data = data {
+                        let response = try JSONDecoder().decode(SearchResponse.self, from: data)
+                        
                         self?.results = (response.items ?? []).map {
-                            SearchResultVM($0)
+                            print($0)
+                            return SearchResultVM($0)
                         }
                     }
+                    self?.isLoading = false
+                } catch {
+                    self?.isLoading = false
+                    print("*** ERROR *** \(error.localizedDescription)")
                 }
-            } catch {
-                print("*** ERROR *** \(error.localizedDescription)")
             }
+            
         }
         task.resume()
+    }
+    
+    func didSelectItem(_ item: SearchResultVM) {
+        if item.description1.hasPrefix("No results,") {
+            performSearch()
+        }
     }
 }
 
@@ -72,14 +86,14 @@ struct SearchResultVM: Identifiable, Hashable {
     
     let id = UUID()
     let title: String
-    let description: String
+    let description1: String
     let favouriteCount: String
     let language: String
     let repoURL: String
     
     init(_ gitItem: GitItemModel) {
         title = gitItem.name
-        description = gitItem.repoDescription
+        description1 = gitItem.repoDescription
         favouriteCount = "\(gitItem.forkCount)"
         language = gitItem.language
         repoURL = gitItem.repoUrl
@@ -87,7 +101,7 @@ struct SearchResultVM: Identifiable, Hashable {
     
     private init() {
         title = ""
-        description = "No results"
+        description1 = "No results, Click Search to search from Git"
         favouriteCount = ""
         language = ""
         repoURL = ""

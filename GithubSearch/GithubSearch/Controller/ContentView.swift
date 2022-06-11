@@ -14,16 +14,43 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             VStack(alignment: .leading) {
-                SearchBarView(searchText: $viewModel.searchText, searching: $searching)
+                HStack {
+                    SearchBarView(searchText: $viewModel.searchText, searching: $searching)
+                    Button("Search") {
+                        viewModel.performSearch()
+                    }
+                    .frame(width: 70, height: 25)
+                    .overlay(
+                            RoundedRectangle(cornerRadius: 25)
+                            .stroke(Color.blue, lineWidth: 2)
+                            )
+                    
+                }.padding([.trailing], 20)
                 List {
-                    Section(header: Text(viewModel.sectionHeading)) {
-                        ForEach(viewModel.filteredItems) { item in
-                            CustomRowItem(item)
+                    if viewModel.isLoading {
+                        HStack() {
+                            Spacer()
+                            ProgressView()
+                            Spacer()
+                        }
+                    } else {
+                        Section(header: Text(viewModel.sectionHeading)) {
+                            ForEach(viewModel.filteredItems) { item in
+                                CustomRowItem(item).onTapGesture {
+                                    viewModel.didSelectItem(item)
+                                }
+                            }
                         }
                     }
                 }
                 .listStyle(GroupedListStyle())
-                .navigationTitle(searching ? "Searching" : "My Git Search")
+                .gesture(DragGesture()
+                    .onChanged({ _ in
+                        UIApplication.shared.dismissKeyboard()
+                    })
+                )
+            }
+            .navigationBarTitle(Text(searching ? "Searching" : "My Git Search"))
                 .toolbar {
                     if searching {
                         Button("Cancel") {
@@ -35,15 +62,12 @@ struct ContentView: View {
                         }
                     }
                 }
-                .gesture(DragGesture()
-                    .onChanged({ _ in
-                        UIApplication.shared.dismissKeyboard()
-                    })
-                )
-            }
-        }.onAppear {
+        }
+        .navigationViewStyle(StackNavigationViewStyle())
+        .onAppear {
             viewModel.performSearch()
         }
+        
     }
 }
 

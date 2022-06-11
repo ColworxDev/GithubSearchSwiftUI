@@ -32,7 +32,7 @@ struct CustomRowItem: View {
 extension CustomRowItem {
     init(_ model: SearchResultVM) {
         title = model.title
-        subtitle = model.description
+        subtitle = model.description1
         favCount = model.favouriteCount
         language = model.language
     }
