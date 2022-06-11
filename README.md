@@ -9,9 +9,9 @@ Tool used Xcode, Language: SwiftUI, Github Search Api: v3
 
 Screenshots from app
 <p style="float:left">
-</br><img src="/screenShot1.png" height="300">
+</br><img src="/screenshot1.png" height="300">
 
-<img src="/screenShot2.png" height="300">
+<img src="/screenshot2.png" height="300">
 </p>
 
 Improvements and updates still needed, will keep updating project time to time.
